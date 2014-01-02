@@ -46,9 +46,15 @@ int _write(int file, char *ptr, int len)
 static void clock_setup(void)
 {
 	/* Enable GPIOD clock for LED & USARTs. */
-	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPBEN);
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
+
+        /* FSMC */
+	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPFEN);
+	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPGEN);
+	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
+	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPEEN);
+	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPIEN);
 
 	/* Enable clocks for USART3. */
 	rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_USART3EN);
@@ -90,6 +96,46 @@ static void gpio_setup(void)
 	gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
 }
 
+static void fsmc_setup(void)
+{
+        /* Address Lines 0-9 on Port F */
+        uint16_t portf_gpios = GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4 | GPIO5 |
+          GPIO12 | GPIO13 | GPIO14 | GPIO15;
+        gpio_set_af(GPIOF, GPIO_AF12, portf_gpios);
+	gpio_mode_setup(GPIOF, GPIO_MODE_AF, GPIO_PUPD_NONE, portf_gpios);
+	gpio_set_output_options(GPIOF, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, portf_gpios);
+        
+        /* Address Lines 10-13 on Port G */
+        uint16_t portg_gpios = GPIO0 | GPIO1 | GPIO2 | GPIO3;
+        gpio_set_af(GPIOG, GPIO_AF12, portg_gpios);
+	gpio_mode_setup(GPIOG, GPIO_MODE_AF, GPIO_PUPD_NONE, portg_gpios);
+	gpio_set_output_options(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, portg_gpios);
+
+        /* Data Lines 0-3, 13-15, OE, WE, E1 on Port D */
+        uint16_t portd_gpios = GPIO14 | GPIO15 | GPIO0 | GPIO1 |
+          GPIO8 | GPIO9 | GPIO10 | GPIO4 | GPIO5 | GPIO7;
+        gpio_set_af(GPIOD, GPIO_AF12, portd_gpios);
+	gpio_mode_setup(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, portd_gpios);
+	gpio_set_output_options(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, portd_gpios);
+
+        /* Data Lines 4-12, NBL0, NBL1 on Port E */
+        uint16_t porte_gpios = GPIO7 | GPIO8 | GPIO9 | GPIO10 | GPIO11 |
+          GPIO12 | GPIO13 | GPIO14 | GPIO15 | GPIO0 | GPIO1;
+        gpio_set_af(GPIOE, GPIO_AF12, porte_gpios);
+	gpio_mode_setup(GPIOE, GPIO_MODE_AF, GPIO_PUPD_NONE, porte_gpios);
+	gpio_set_output_options(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, porte_gpios);
+
+        /* Special inputs Busy, Int on Port I */
+        uint16_t porti_gpios = GPIO8 | GPIO10;
+	gpio_mode_setup(GPIOI, GPIO_MODE_INPUT, GPIO_PUPD_NONE, porti_gpios);
+	//gpio_set_output_options(GPIOI, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, porti_gpios);
+
+        /* Special output Sem on Port I */
+        porti_gpios = GPIO11;
+	gpio_mode_setup(GPIOI, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, porti_gpios);
+	gpio_set_output_options(GPIOI, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, porti_gpios);
+}
+
 char test_to_run = 'A';
 
 int main(void)
@@ -97,6 +143,7 @@ int main(void)
 	clock_setup();
 	gpio_setup();
 	usart_setup();
+        fsmc_setup();
 
         printf("Startup complete\r\n");
         printf("Select test:\r\n");
