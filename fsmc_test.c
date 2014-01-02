@@ -26,6 +26,7 @@
 #include <libopencm3/stm32/f4/gpio.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/fsmc.h>
 
 int _write(int file, char *ptr, int len);
 
@@ -58,6 +59,9 @@ static void clock_setup(void)
 
 	/* Enable clocks for USART3. */
 	rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_USART3EN);
+
+        /* FSMC */
+	rcc_peripheral_enable_clock(&RCC_AHB3ENR, RCC_AHB3ENR_FSMCEN);
 }
 
 static void usart_setup(void)
@@ -96,6 +100,8 @@ static void gpio_setup(void)
 	gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
 }
 
+#define FSMC_BCR_RESERVED (1 << 7)
+
 static void fsmc_setup(void)
 {
         /* Address Lines 0-9 on Port F */
@@ -104,7 +110,7 @@ static void fsmc_setup(void)
         gpio_set_af(GPIOF, GPIO_AF12, portf_gpios);
 	gpio_mode_setup(GPIOF, GPIO_MODE_AF, GPIO_PUPD_NONE, portf_gpios);
 	gpio_set_output_options(GPIOF, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, portf_gpios);
-        
+
         /* Address Lines 10-13 on Port G */
         uint16_t portg_gpios = GPIO0 | GPIO1 | GPIO2 | GPIO3;
         gpio_set_af(GPIOG, GPIO_AF12, portg_gpios);
@@ -134,6 +140,10 @@ static void fsmc_setup(void)
         porti_gpios = GPIO11;
 	gpio_mode_setup(GPIOI, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, porti_gpios);
 	gpio_set_output_options(GPIOI, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, porti_gpios);
+
+        /* Configure in Mode 1 according to Datasheet p1527 ff. */
+        FSMC_BCR(0) = FSMC_BCR_WREN | FSMC_BCR_RESERVED | FSMC_BCR_MWID | FSMC_BCR_MBKEN;
+        FSMC_BTR(0) = FSMC_BTR_BUSTURNx(0) | FSMC_BTR_DATASTx(0) | FSMC_BTR_ADDSETx(0);
 }
 
 char test_to_run = 'A';
@@ -145,10 +155,15 @@ int main(void)
 	usart_setup();
         fsmc_setup();
 
+        int* test = 0x60000000;
+        //int* test = 0x20004000;
+
         printf("Startup complete\r\n");
         printf("Select test:\r\n");
         printf(" - [w]rite\r\n");
         printf(" - [r]ead\r\n");
+        printf(" - b[c]r register\r\n");
+        printf(" - b[t]r register\r\n");
 
 
 	while (1) {
@@ -156,12 +171,22 @@ int main(void)
 		{
 		case 'r':
 			printf("Running read test...\r\n");
+                        printf("0x%08x\r\n", *test);
 			test_to_run = '\0';
 			break;
 		case 'w':
 			printf("Running write test...\r\n");
+                        *test = 0xafafafaf;
 			test_to_run = '\0';
 			break;
+                case 'c':
+                        printf("BCR register: 0x%08x\r\n", (unsigned int)FSMC_BCR(0));
+			test_to_run = '\0';
+                        break;
+                case 't':
+                        printf("BTR register: 0x%08x\r\n", (unsigned int)FSMC_BTR(0));
+			test_to_run = '\0';
+                        break;
                 case '\0':
 			__asm__("NOP");
 			break;
