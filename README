@@ -1,0 +1,14 @@
+This test programm uses the FSMC subsystem to use the
+Dual-Port-RAM on NG-UAVP HW 0.30
+
+This example program echoes data sent in on USART3.
+(Connect RX/TX to PB10/PB11 on the discovery board)
+
+The terminal settings for the receiving device/PC are 38400 8n1.
+
+Compile using something along these lines:
+PATH=$PATH:/opt/arm-ngos-eabi-gcc-4.6.4/bin
+make
+sudo make flash V=1
+
+
