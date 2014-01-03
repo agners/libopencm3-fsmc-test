@@ -70,11 +70,12 @@ static void usart_setup(void)
 	nvic_enable_irq(NVIC_USART3_IRQ);
 
 	/* Setup GPIO pins for USART3 transmit. */
+        gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO10);
 	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10);
 
 	/* Setup GPIO pins for USART3 receive. */
-	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11);
 	gpio_set_output_options(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_25MHZ, GPIO11);
+	gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11);
 
 	/* Setup USART3 TX and RX pin as alternate function. */
 	gpio_set_af(GPIOB, GPIO_AF7, GPIO10 | GPIO11);
