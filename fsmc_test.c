@@ -149,6 +149,52 @@ static void fsmc_setup(void)
 
 char test_to_run = 'A';
 
+uint32_t readhex()
+{
+        uint32_t out = 0;
+        int bytes = 8;
+        while(bytes)
+        {
+                char new, print;
+
+                /* Wait for character */
+                while (!test_to_run);
+
+                new = print = test_to_run;
+                test_to_run = '\0';
+
+                if (new >= '0' && new <= '9')
+                         new -= '0';
+                else if (new >= 'a' && new <= 'f')
+                         new -= 'a' + 10;
+                else
+                          continue;
+
+                out <<= 4;
+                out |= new;
+                printf("%c", print);
+                fflush(stdout);
+                bytes--;
+        }
+        printf("\r\n");
+        return out;
+}
+
+
+int* test = (int*)0x60000000;
+
+int help(void)
+{
+        printf("Startup complete\r\n");
+        printf("Select test:\r\n");
+        printf(" - [d]estination (%08x)\r\n", test);
+        printf(" - [w]rite\r\n");
+        printf(" - [r]ead\r\n");
+        printf(" - b[c]r register\r\n");
+        printf(" - b[t]r register\r\n");
+        printf(" - [h]elp\r\n");
+}
+
 int main(void)
 {
 	clock_setup();
@@ -156,22 +202,24 @@ int main(void)
 	usart_setup();
         fsmc_setup();
 
-        int* test = 0x60000000;
         //int* test = 0x20004000;
-
-        printf("Startup complete\r\n");
-        printf("Select test:\r\n");
-        printf(" - [w]rite\r\n");
-        printf(" - [r]ead\r\n");
-        printf(" - b[c]r register\r\n");
-        printf(" - b[t]r register\r\n");
-
+        help();
 
 	while (1) {
 		switch (test_to_run)
 		{
+                case 'h':
+                        help();
+                        test_to_run = '\0';
+                        break;
+                case 'd':
+                        printf("Define new destination address: 0x");
+                        fflush(stdout);
+			test_to_run = '\0';
+                        test = (int*)readhex();
+                        break;
 		case 'r':
-			printf("Running read test...\r\n");
+			printf("Running read test from (%08x)...\r\n", (unsigned int)test);
                         printf("0x%08x\r\n", *test);
 			test_to_run = '\0';
 			break;
