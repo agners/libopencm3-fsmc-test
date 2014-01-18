@@ -27,6 +27,7 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/fsmc.h>
+#include <libopencm3/stm32/exti.h>
 
 int _write(int file, char *ptr, int len);
 
@@ -134,7 +135,7 @@ static void fsmc_setup(void)
 
         /* Special inputs Busy, Int on Port I */
         uint16_t porti_gpios = GPIO8 | GPIO10;
-	gpio_mode_setup(GPIOI, GPIO_MODE_INPUT, GPIO_PUPD_NONE, porti_gpios);
+	gpio_mode_setup(GPIOI, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, porti_gpios);
 	//gpio_set_output_options(GPIOI, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, porti_gpios);
 
         /* Special output Sem on Port I */
@@ -145,11 +146,26 @@ static void fsmc_setup(void)
         /* Configure in Mode 1 according to Datasheet p1527 ff. */
         FSMC_BCR(0) = FSMC_BCR_WREN | FSMC_BCR_RESERVED | FSMC_BCR_MWID | FSMC_BCR_MBKEN;
         FSMC_BTR(0) = FSMC_BTR_BUSTURNx(0) | FSMC_BTR_DATASTx(0) | FSMC_BTR_ADDSETx(0);
+
+	nvic_enable_irq(NVIC_EXTI9_5_IRQ);
+        exti_select_source(EXTI8, GPIOI);
+
+	exti_set_trigger(EXTI8, EXTI_TRIGGER_FALLING);
+	exti_reset_request(EXTI8);
+	exti_enable_request(EXTI8);
+}
+
+void exti9_5_isr(void)
+{
+	exti_reset_request(EXTI8);
+        printf("Got interrupt! We need to read something...\r\n");
 }
 
 char test_to_run = 'A';
+int* test = (int*)0x60000000;
+int data = 0xc0ffeeba;
 
-uint32_t readhex()
+static uint32_t readhex(void)
 {
         uint32_t out = 0;
         int bytes = 8;
@@ -180,10 +196,7 @@ uint32_t readhex()
         return out;
 }
 
-
-int* test = (int*)0x60000000;
-int data = 0xc0ffeeba;
-void help(void)
+static void help(void)
 {
         printf("Startup complete\r\n");
         printf("Select test:\r\n");
