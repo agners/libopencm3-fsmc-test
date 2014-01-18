@@ -182,14 +182,17 @@ uint32_t readhex()
 
 
 int* test = (int*)0x60000000;
-
-int help(void)
+int data = 0xc0ffeeba;
+void help(void)
 {
         printf("Startup complete\r\n");
         printf("Select test:\r\n");
-        printf(" - [d]estination (%08x)\r\n", test);
+        printf(" - [d]estination (currently %08x)\r\n", (unsigned int)test);
+        printf(" - [e]dit data (currently %08x)\r\n", (unsigned int)data);
         printf(" - [w]rite\r\n");
         printf(" - [r]ead\r\n");
+        printf(" - [s]et semaphore\r\n");
+        printf(" - [f]alsify semaphore\r\n");
         printf(" - b[c]r register\r\n");
         printf(" - b[t]r register\r\n");
         printf(" - [h]elp\r\n");
@@ -218,16 +221,32 @@ int main(void)
 			test_to_run = '\0';
                         test = (int*)readhex();
                         break;
+                case 'e':
+                        printf("Define new data: 0x");
+                        fflush(stdout);
+                        test_to_run = '\0';
+                        data = (int)readhex();
+                        break;
 		case 'r':
 			printf("Running read test from (%08x)...\r\n", (unsigned int)test);
                         printf("0x%08x\r\n", *test);
 			test_to_run = '\0';
 			break;
 		case 'w':
-			printf("Running write test...\r\n");
-                        *test = 0xafafafaf;
+			printf("Running write (%08x)...\r\n", (unsigned int)data);
+                        *test = data;
 			test_to_run = '\0';
 			break;
+                case 's':
+                        printf("Set semaphore...\r\n");
+                        gpio_set(GPIOI, GPIO11);
+			test_to_run = '\0';
+                        break;
+                case 'f':
+                        printf("Clear semaphore...\r\n");
+                        gpio_clear(GPIOI, GPIO11);
+			test_to_run = '\0';
+                        break;
                 case 'c':
                         printf("BCR register: 0x%08x\r\n", (unsigned int)FSMC_BCR(0));
 			test_to_run = '\0';
