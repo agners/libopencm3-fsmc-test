@@ -213,6 +213,7 @@ static void help(void)
         printf(" - [f]c interrupt (write 3fff)\r\n");
         printf(" - [g]pio interrupt\r\n");
         printf(" - [b]usy gpio\r\n");
+        printf(" - [n]ull ram\r\n");
         printf(" - b[c]r register\r\n");
         printf(" - b[t]r register\r\n");
         printf(" - [h]elp\r\n");
@@ -273,6 +274,13 @@ int main(void)
                         printf("Write addresses 0x60000000..0x60003fff...\r\n");
                         for (addr = (unsigned int *)0x60000000; addr < (unsigned int *)0x60003fff; addr++)
                                   *addr = (unsigned int)addr;
+                        printf("Done...\r\n");
+			test_to_run = '\0';
+                        break;
+                case 'n':
+                        printf("Write addresses 0x60000000..0x60003fff...\r\n");
+                        for (addr = (unsigned int *)0x60000000; addr < (unsigned int *)0x60003fff; addr++)
+                                  *addr = (unsigned int)0;
                         printf("Done...\r\n");
 			test_to_run = '\0';
                         break;
