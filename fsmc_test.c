@@ -157,8 +157,9 @@ static void fsmc_setup(void)
 
 void exti9_5_isr(void)
 {
-	exti_reset_request(EXTI8);
         printf("Got interrupt! We need to read something...\r\n");
+	exti_reset_request(EXTI8);
+        while(1);
 }
 
 char test_to_run = 'A';
@@ -182,12 +183,12 @@ static uint32_t readhex(void)
                 if (new >= '0' && new <= '9')
                          new -= '0';
                 else if (new >= 'a' && new <= 'f')
-                         new -= 'a' + 10;
+                         new = (new - 'a') + 10;
                 else
                           continue;
 
                 out <<= 4;
-                out |= new;
+                out |= (unsigned int)new;
                 printf("%c", print);
                 fflush(stdout);
                 bytes--;
@@ -205,9 +206,13 @@ static void help(void)
         printf(" - [w]rite\r\n");
         printf(" - [r]ead\r\n");
         printf(" - [s]et semaphore\r\n");
-        printf(" - [f]alsify semaphore\r\n");
+        printf(" - [v] clear semaphore\r\n");
         printf(" - [o]ut test (write to all addresses)\r\n");
         printf(" - [i]n test (read all addresses)\r\n");
+        printf(" - [u]c interrupt (write 3ffe)\r\n");
+        printf(" - [f]c interrupt (write 3fff)\r\n");
+        printf(" - [g]pio interrupt\r\n");
+        printf(" - [b]usy gpio\r\n");
         printf(" - b[c]r register\r\n");
         printf(" - b[t]r register\r\n");
         printf(" - [h]elp\r\n");
@@ -216,6 +221,7 @@ static void help(void)
 int main(void)
 {
         unsigned int *addr;
+        unsigned char *intaddr;
 
 	clock_setup();
 	gpio_setup();
@@ -258,7 +264,7 @@ int main(void)
                         gpio_set(GPIOI, GPIO11);
 			test_to_run = '\0';
                         break;
-                case 'f':
+                case 'v':
                         printf("Clear semaphore...\r\n");
                         gpio_clear(GPIOI, GPIO11);
 			test_to_run = '\0';
@@ -289,6 +295,26 @@ int main(void)
                         printf("BTR register: 0x%08x\r\n", (unsigned int)FSMC_BTR(0));
 			test_to_run = '\0';
                         break;
+		case 'u':
+                        intaddr = (unsigned char *)0x60003fff;
+			printf("Generate interrupt for UC (%08x)...\r\n", (unsigned int)intaddr);
+                        *intaddr = (unsigned char)0xff;
+			test_to_run = '\0';
+			break;
+		case 'f':
+                        intaddr = (unsigned char *)0x60003ffe;
+			printf("Generate interrupt for FC (%08x)...\r\n", (unsigned int)intaddr);
+                        *intaddr = (unsigned char)0xff;
+			test_to_run = '\0';
+			break;
+                case 'g':
+                        printf("GPIO Interrupt is: %d\r\n", gpio_get(GPIOI, GPIO8));
+			test_to_run = '\0';
+			break;
+                case 'b':
+                        printf("GPIO Busy is: %d\r\n", gpio_get(GPIOI, GPIO10));
+			test_to_run = '\0';
+			break;
                 case '\0':
 			__asm__("NOP");
 			break;
