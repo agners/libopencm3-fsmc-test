@@ -162,8 +162,8 @@ void exti9_5_isr(void)
 }
 
 char test_to_run = 'A';
-int* test = (int*)0x60000000;
-int data = 0xc0ffeeba;
+unsigned int* test = (unsigned int*)0x60000000;
+unsigned int data = 0xc0ffeeba;
 
 static uint32_t readhex(void)
 {
@@ -206,6 +206,8 @@ static void help(void)
         printf(" - [r]ead\r\n");
         printf(" - [s]et semaphore\r\n");
         printf(" - [f]alsify semaphore\r\n");
+        printf(" - [o]ut test (write to all addresses)\r\n");
+        printf(" - [i]n test (read all addresses)\r\n");
         printf(" - b[c]r register\r\n");
         printf(" - b[t]r register\r\n");
         printf(" - [h]elp\r\n");
@@ -213,12 +215,13 @@ static void help(void)
 
 int main(void)
 {
+        unsigned int *addr;
+
 	clock_setup();
 	gpio_setup();
 	usart_setup();
         fsmc_setup();
 
-        //int* test = 0x20004000;
         help();
 
 	while (1) {
@@ -232,7 +235,7 @@ int main(void)
                         printf("Define new destination address: 0x");
                         fflush(stdout);
 			test_to_run = '\0';
-                        test = (int*)readhex();
+                        test = (unsigned int*)readhex();
                         break;
                 case 'e':
                         printf("Define new data: 0x");
@@ -258,6 +261,24 @@ int main(void)
                 case 'f':
                         printf("Clear semaphore...\r\n");
                         gpio_clear(GPIOI, GPIO11);
+			test_to_run = '\0';
+                        break;
+                case 'o':
+                        printf("Write addresses 0x60000000..0x60003fff...\r\n");
+                        for (addr = (unsigned int *)0x60000000; addr < (unsigned int *)0x60003fff; addr++)
+                                  *addr = (unsigned int)addr;
+                        printf("Done...\r\n");
+			test_to_run = '\0';
+                        break;
+                case 'i':
+                        printf("Read addresses...\r\n");
+                        for (addr = (unsigned int *)0x60000000; addr < (unsigned int *)0x60003fff; addr++) {
+                                  if (*addr != (unsigned int)addr)
+                                          printf("Wrong data (0x%08x) at address  0x%08x\r\n",
+                                              *addr, (unsigned int)addr);
+                                  *addr = (unsigned int)addr;
+                        }
+                        printf("Done...\r\n");
 			test_to_run = '\0';
                         break;
                 case 'c':
