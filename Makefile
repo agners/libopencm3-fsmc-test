@@ -61,8 +61,10 @@ LDFLAGS		+= --static -lc -lnosys -L$(TOOLCHAIN_DIR)/lib \
 OBJS		+= $(BINARY).o
 
 OOCD		?= openocd
-OOCD_INTERFACE	?= stlink-v2
-OOCD_BOARD	?= stm32f4discovery
+OOCD_INTERFACE	?= uavp-ng-ftdi-jtag.cfg
+OOCD_BOARD_FC	?= openocd-stm32f4-fc.cfg
+OOCD_BOARD_UC	?= openocd-stm32f4-uc.cfg
+OOCD_SCRIPT	?= uavp-ng-hw-0.30.conf
 # Black magic probe specific variables
 # Set the BMP_PORT to a serial port and then BMP is used for flashing
 BMP_PORT        ?=
@@ -83,6 +85,8 @@ all: images
 
 images: $(BINARY).images
 flash: $(BINARY).flash
+flash-fc: $(BINARY).flash-fc
+flash-uc: $(BINARY).flash-uc
 
 %.images: %.bin %.hex %.srec %.list
 	@#echo "*** $* images generated ***"
@@ -126,28 +130,22 @@ clean:
 
 	
 ifeq ($(BMP_PORT),)
-ifeq ($(OOCD_SERIAL),)
-%.flash: %.hex
+%.flash-fc: %.hex
 	@printf "  FLASH   $<\n"
 	@# IMPORTANT: Don't use "resume", only "reset" will work correctly!
-	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		    -f board/$(OOCD_BOARD).cfg \
-		    -c "init" -c "reset init" \
-		    -c "flash write_image erase $(*).hex" \
-		    -c "reset" \
-		    -c "shutdown" $(NULL)
-else
-%.flash: %.hex
+	$(Q)$(OOCD) -f $(OOCD_INTERFACE) \
+		    -f $(OOCD_BOARD_UC) \
+		    -f $(OOCD_SCRIPT) \
+		    -c "init" \
+		    -c "flash_it $(*).hex 0"
+%.flash-uc: %.hex
 	@printf "  FLASH   $<\n"
 	@# IMPORTANT: Don't use "resume", only "reset" will work correctly!
-	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		    -f board/$(OOCD_BOARD).cfg \
-		    -c "ft2232_serial $(OOCD_SERIAL)" \
-		    -c "init" -c "reset init" \
-		    -c "flash write_image erase $(*).hex" \
-		    -c "reset" \
-		    -c "shutdown" $(NULL)
-endif
+	$(Q)$(OOCD) -f $(OOCD_INTERFACE) \
+		    -f $(OOCD_BOARD_FC) \
+		    -f $(OOCD_SCRIPT) \
+		    -c "init" \
+		    -c "flash_it $(*).hex 0"
 else
 %.flash: %.elf
 	@echo "  GDB   $(*).elf (flash)"
